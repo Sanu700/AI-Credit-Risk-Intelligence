@@ -1,0 +1,45 @@
+DEPLOYMENT INSTRUCTIONS
+========================
+
+STEP 1 — Add german_credit.csv
+--------------------------------
+Copy german_credit.csv into the api/ folder before pushing.
+
+STEP 2 — Push to GitHub
+------------------------
+Push everything to your AI-Credit-Risk-Intelligence repo:
+
+  git add .
+  git commit -m "add full dashboard with render config"
+  git push
+
+STEP 3 — Deploy BACKEND on Render (free)
+-----------------------------------------
+1. Go to render.com → New → Web Service
+2. Connect your AI-Credit-Risk-Intelligence GitHub repo
+3. Settings:
+   - Root directory: api
+   - Build command: pip install -r ../requirements.txt
+   - Start command: uvicorn index:app --host 0.0.0.0 --port $PORT
+   - Instance type: Free
+4. Add environment variable:
+   - GEMINI_API_KEY = your_gemini_api_key
+5. Deploy → wait 2-3 mins
+6. Copy your live URL: https://credit-risk-backend.onrender.com
+
+NOTE: Free tier sleeps after 15 mins inactivity.
+Fix this: go to uptimerobot.com (free) → New Monitor →
+HTTP(s) → URL: https://your-render-url.onrender.com/api/health
+→ every 5 mins. Keeps it awake 24/7.
+
+STEP 4 — Deploy FRONTEND on Vercel (free)
+------------------------------------------
+1. Go to vercel.com → Import your GitHub repo
+2. Root directory: frontend/
+3. Add environment variable:
+   REACT_APP_API_URL = https://your-render-url.onrender.com
+4. Deploy
+
+DONE!
+Frontend: https://ai-credit-risk-intelligence.vercel.app
+Backend:  https://your-render-url.onrender.com
