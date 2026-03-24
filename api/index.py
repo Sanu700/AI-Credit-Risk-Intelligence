@@ -28,6 +28,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Precompute on startup ─────────────────────────────────────────────────────
+@app.on_event("startup")
+async def startup_event():
+    print("Precomputing ML pipeline on startup...")
+    get_portfolio_breakdown()
+    get_expected_loss()
+    get_var()
+    get_loss_distribution()
+    get_feature_importance()
+    get_model_performance()
+    print("ML pipeline ready — all endpoints will respond instantly!")
+
+# ── Routes ────────────────────────────────────────────────────────────────────
+
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
@@ -73,29 +87,23 @@ def executive_summary():
         med_pct      = next(t["percentage"] for t in breakdown if t["tier"] == "Medium Risk")
         high_pct     = next(t["percentage"] for t in breakdown if t["tier"] == "High Risk")
 
-        prompt = f"""
-You are a senior credit risk analyst at a top consulting firm.
-Write a concise executive summary (3-4 short paragraphs, plain text, no bullet points)
-for a board-level audience based on the following portfolio data:
+        # Concise prompt for faster Gemini response
+        prompt = f"""You are a senior credit risk analyst. Write a concise executive summary (3 short paragraphs, plain text, no bullets) for a board audience:
 
-Portfolio Size: {portfolio_data['total']} borrowers
-Risk Breakdown: {low_pct}% Low Risk, {med_pct}% Medium Risk, {high_pct}% High Risk
-Expected Loss per borrower: ${var_data['expectedLoss']}
-Value-at-Risk (95%): ${var_data['var95']}
-Value-at-Risk (99%): ${var_data['var99']}
+Portfolio: {portfolio_data['total']} borrowers — {low_pct}% Low, {med_pct}% Medium, {high_pct}% High Risk
+Expected Loss: ${var_data['expectedLoss']} per borrower
+VaR 95%: ${var_data['var95']} | VaR 99%: ${var_data['var99']}
 Top Risk Drivers: {top_features}
 Model AUC: {perf_data['bestAuc']} (Random Forest)
 
-Include: portfolio health assessment, key risk concentration, VaR interpretation,
-and 1-2 actionable recommendations for risk mitigation.
-Keep language professional and concise.
-        """
+Cover: portfolio health, risk concentration, VaR interpretation, 1 recommendation."""
 
-        model    = GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(prompt)
+        model = GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(
+            prompt,
+            generation_config={"max_output_tokens": 300}
+        )
         return {"summary": response.text}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-# Vercel serverless handler
