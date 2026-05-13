@@ -31,18 +31,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# ── Precompute on startup ─────────────────────────────────────────────────────
-@app.on_event("startup")
-async def startup_event():
-    print("Precomputing ML pipeline on startup...")
-    get_portfolio_breakdown()
-    get_expected_loss()
-    get_var()
-    get_loss_distribution()
-    get_feature_importance()
-    get_model_performance()
-    print("ML pipeline ready — all endpoints will respond instantly!")
-
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.get("/api/health")
