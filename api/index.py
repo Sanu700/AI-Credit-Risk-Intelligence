@@ -7,7 +7,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 import google.generativeai as genai
-from google.generativeai.generative_models import GenerativeModel
 
 from model import (
     get_portfolio_breakdown,
@@ -174,18 +173,18 @@ def executive_summary():
     try:
 
         if not GEMINI_API_KEY:
-            raise HTTPException(
-                status_code=500,
-                detail="GEMINI_API_KEY not set"
-            )
+            return {
+                "summary": "Gemini API key not configured."
+            }
 
-        # Fetch analytics data
         var_data = get_var()
+
         portfolio_data = get_portfolio_breakdown()
+
         fi_data = get_feature_importance()
+
         perf_data = get_model_performance()
 
-        # Extract feature names safely
         top_features = ", ".join(
             [f["feature"] for f in fi_data[:3]]
         )
@@ -210,20 +209,19 @@ def executive_summary():
             if t["tier"] == "High Risk"
         )
 
-        # Gemini Prompt
         prompt = f"""
-You are a senior credit risk analyst.
+You are a senior banking risk analyst.
 
-Write a concise executive summary in 3 short paragraphs for a banking board audience.
+Generate a concise executive summary.
 
-Portfolio Summary:
+Portfolio:
 - Total Borrowers: {portfolio_data['total']}
 - Low Risk: {low_pct}%
 - Medium Risk: {med_pct}%
 - High Risk: {high_pct}%
 
 Risk Metrics:
-- Expected Loss: ${var_data['expectedLoss']} per borrower
+- Expected Loss: ${var_data['expectedLoss']}
 - VaR 95%: ${var_data['var95']}
 - VaR 99%: ${var_data['var99']}
 
@@ -231,40 +229,36 @@ Top Risk Drivers:
 {top_features}
 
 Model Performance:
-- Random Forest AUC: {perf_data['bestAuc']}
+- Best Model: {perf_data['bestModel']}
+- AUC: {perf_data['bestAuc']}
 
-Discuss:
+Write:
 1. Portfolio health
-2. Risk concentration
-3. VaR interpretation
-4. One recommendation
+2. Key risks
+3. One recommendation
 
-Keep response professional and concise.
+Maximum 3 short paragraphs.
 """
 
-        # Create Gemini Model
-        model = GenerativeModel("gemini-1.5-flash")
+        # Configure Gemini INSIDE route
+        genai.configure(api_key=GEMINI_API_KEY)
 
-        # Generate Response
-        response = model.generate_content(
-            prompt,
-            generation_config={
-                "max_output_tokens": 300,
-                "temperature": 0.4,
-            }
+        model = genai.GenerativeModel(
+            "gemini-1.5-flash"
         )
 
-        summary_text = response.text.strip()
+        response = model.generate_content(prompt)
+
+        summary_text = response.text
 
         return {
             "summary": summary_text
         }
 
-    except HTTPException as http_error:
-        raise http_error
-
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Summary Generation Error: {str(e)}"
-        )
+
+        print("GEMINI ERROR:", str(e))
+
+        return {
+            "summary": f"Summary generation temporarily unavailable: {str(e)}"
+        }
