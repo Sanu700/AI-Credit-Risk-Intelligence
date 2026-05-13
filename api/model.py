@@ -8,36 +8,20 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import roc_auc_score
 
-# ─────────────────────────────────────────────────────────────
-# File Paths
-# ─────────────────────────────────────────────────────────────
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(BASE_DIR, "german_credit.csv")
-
-# ─────────────────────────────────────────────────────────────
-# Global Caches
-# ─────────────────────────────────────────────────────────────
 
 _model = None
 _df_processed = None
 _feature_names = None
 _performance_cache = None
 
-# ─────────────────────────────────────────────────────────────
-# Load Dataset
-# ─────────────────────────────────────────────────────────────
 
 def load_data():
-    df = pd.read_csv(DATA_PATH)
-    return df
+    return pd.read_csv(DATA_PATH)
 
-# ─────────────────────────────────────────────────────────────
-# Preprocessing
-# ─────────────────────────────────────────────────────────────
 
 def preprocess(df):
-
     df = df.copy()
 
     le = LabelEncoder()
@@ -47,9 +31,6 @@ def preprocess(df):
 
     return df
 
-# ─────────────────────────────────────────────────────────────
-# Train & Cache Model
-# ─────────────────────────────────────────────────────────────
 
 def get_model():
 
@@ -60,17 +41,18 @@ def get_model():
     if _model is not None:
         return _model, _df_processed, _feature_names
 
-    # Load and preprocess
     df = load_data()
     df_proc = preprocess(df)
 
-    # Target column
-    target_col = "Risk" if "Risk" in df_proc.columns else df_proc.columns[-1]
+    target_col = (
+        "Risk"
+        if "Risk" in df_proc.columns
+        else df_proc.columns[-1]
+    )
 
     X = df_proc.drop(columns=[target_col])
     y = df_proc[target_col]
 
-    # Binary encoding fix
     if y.max() == 2:
         y = (y == 2).astype(int)
 
@@ -83,12 +65,11 @@ def get_model():
         random_state=42
     )
 
-    # Train Random Forest ONCE
-   RandomForestClassifier(
-    n_estimators=100,
-    random_state=42,
-    n_jobs=1
-)
+    model = RandomForestClassifier(
+        n_estimators=30,
+        random_state=42,
+        n_jobs=1
+    )
 
     model.fit(X_train, y_train)
 
@@ -99,9 +80,6 @@ def get_model():
 
     return _model, _df_processed, _feature_names
 
-# ─────────────────────────────────────────────────────────────
-# Portfolio Breakdown
-# ─────────────────────────────────────────────────────────────
 
 def get_portfolio_breakdown():
 
@@ -145,9 +123,6 @@ def get_portfolio_breakdown():
         ]
     }
 
-# ─────────────────────────────────────────────────────────────
-# Expected Loss
-# ─────────────────────────────────────────────────────────────
 
 def get_expected_loss():
 
@@ -191,9 +166,6 @@ def get_expected_loss():
         )
     ]
 
-# ─────────────────────────────────────────────────────────────
-# Value at Risk
-# ─────────────────────────────────────────────────────────────
 
 def get_var():
 
@@ -215,9 +187,6 @@ def get_var():
         "currency": "USD"
     }
 
-# ─────────────────────────────────────────────────────────────
-# Loss Distribution
-# ─────────────────────────────────────────────────────────────
 
 def get_loss_distribution():
 
@@ -270,9 +239,6 @@ def get_loss_distribution():
         )
     }
 
-# ─────────────────────────────────────────────────────────────
-# Feature Importance
-# ─────────────────────────────────────────────────────────────
 
 def get_feature_importance():
 
@@ -294,9 +260,6 @@ def get_feature_importance():
         for f, v in fi
     ]
 
-# ─────────────────────────────────────────────────────────────
-# Model Performance
-# ─────────────────────────────────────────────────────────────
 
 def get_model_performance():
 
@@ -329,7 +292,6 @@ def get_model_performance():
         random_state=42
     )
 
-    # Logistic Regression
     lr = LogisticRegression(
         max_iter=1000,
         random_state=42
@@ -342,11 +304,10 @@ def get_model_performance():
         lr.predict_proba(X_test)[:, 1]
     )
 
-    # Random Forest
     rf = RandomForestClassifier(
-        n_estimators=100,
+        n_estimators=30,
         random_state=42,
-        n_jobs=-1
+        n_jobs=1
     )
 
     rf.fit(X_train, y_train)
