@@ -240,11 +240,10 @@ Write:
 Maximum 3 short paragraphs.
 """
 
-        # Configure Gemini INSIDE route
         genai.configure(api_key=GEMINI_API_KEY)
 
         model = genai.GenerativeModel(
-            "gemini-1.5-flash"
+            "gemini-pro"
         )
 
         response = model.generate_content(prompt)
