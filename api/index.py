@@ -223,7 +223,7 @@ Model:
 Write 3 concise professional paragraphs.
 """
 
-       url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
 
         payload = {
             "contents": [
