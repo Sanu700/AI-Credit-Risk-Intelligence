@@ -243,16 +243,20 @@ Write 3 concise professional paragraphs.
             timeout=30
         )
 
-       data = response.json()
+        data = response.json()
 
-print(data)
+        print(data)
 
-if "candidates" not in data:
-    return {
-        "summary": f"Gemini API Error: {data}"
-    }
+        if "candidates" not in data:
+            return {
+                "summary": f"Gemini API Error: {data}"
+            }
 
-summary = data["candidates"][0]["content"]["parts"][0]["text"]
+        summary = data["candidates"][0]["content"]["parts"][0]["text"]
+
+        return {
+            "summary": summary
+        }
 
     except Exception as e:
 
