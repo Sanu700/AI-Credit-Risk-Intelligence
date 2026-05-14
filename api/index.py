@@ -1,12 +1,11 @@
 import sys
 import os
+import requests
 
 sys.path.insert(0, os.path.dirname(__file__))
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-
-import google.generativeai as genai
 
 from model import (
     get_portfolio_breakdown,
@@ -18,13 +17,10 @@ from model import (
 )
 
 # ─────────────────────────────────────────────────────────────
-# Gemini Setup
+# Environment Variables
 # ─────────────────────────────────────────────────────────────
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
 
 # ─────────────────────────────────────────────────────────────
 # FastAPI App
@@ -41,13 +37,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://ai-credit-risk-intelligence.vercel.app",
-        "https://*.vercel.app",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -210,9 +200,7 @@ def executive_summary():
         )
 
         prompt = f"""
-You are a senior banking risk analyst.
-
-Generate a concise executive summary.
+Generate a professional executive summary for a credit risk dashboard.
 
 Portfolio:
 - Total Borrowers: {portfolio_data['total']}
@@ -222,42 +210,51 @@ Portfolio:
 
 Risk Metrics:
 - Expected Loss: ${var_data['expectedLoss']}
-- VaR 95%: ${var_data['var95']}
-- VaR 99%: ${var_data['var99']}
+- VaR95: ${var_data['var95']}
+- VaR99: ${var_data['var99']}
 
 Top Risk Drivers:
 {top_features}
 
-Model Performance:
+Model:
 - Best Model: {perf_data['bestModel']}
 - AUC: {perf_data['bestAuc']}
 
-Write:
-1. Portfolio health
-2. Key risks
-3. One recommendation
-
-Maximum 3 short paragraphs.
+Write 3 concise professional paragraphs.
 """
 
-        genai.configure(api_key=GEMINI_API_KEY)
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
 
-        model = genai.GenerativeModel(
-            "gemini-pro"
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {
+                            "text": prompt
+                        }
+                    ]
+                }
+            ]
+        }
+
+        response = requests.post(
+            url,
+            json=payload,
+            timeout=30
         )
 
-        response = model.generate_content(prompt)
+        data = response.json()
 
-        summary_text = response.text
+        summary = data["candidates"][0]["content"]["parts"][0]["text"]
 
         return {
-            "summary": summary_text
+            "summary": summary
         }
 
     except Exception as e:
 
-        print("GEMINI ERROR:", str(e))
+        print("SUMMARY ERROR:", str(e))
 
         return {
-            "summary": f"Summary generation temporarily unavailable: {str(e)}"
+            "summary": f"Summary generation failed: {str(e)}"
         }
